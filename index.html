@@ -488,7 +488,34 @@ function renderConfirmSheet(){
     $('#confirmPrimaryBtn').textContent='Delete Forever';
   }
 }
-function renderReport(){const tabs=$('#categoryTabs'), box=$('#reportContent'); const a=state.analysis; if(!a||!a.categories){tabs.innerHTML=''; box.innerHTML='<div class="empty">Use Local Preview or Generate AI Report to turn completed tasks into a traceable review.</div>';return;} const cats=a.categories; if(!state.selectedCategory || !cats.find(c=>c.name===state.selectedCategory)) state.selectedCategory=cats[0]?.name; tabs.innerHTML=cats.map(c=>`<button class="report-tab ${c.name===state.selectedCategory?'active':''}" data-cat="${escapeHtml(c.name)}">${escapeHtml(c.name)}</button>`).join(''); const c=cats.find(x=>x.name===state.selectedCategory)||cats[0]; box.innerHTML=`<div class="category-card"><h3>${escapeHtml(c.name)}</h3><p><b>Why this category:</b> ${escapeHtml(c.reason||'')}</p><p><b>Progress trace:</b> ${escapeHtml(c.journey||'')}</p><p><b>Deadline review:</b> ${escapeHtml(c.deadline_review||'')}</p><p><b>Reusable insight:</b> ${escapeHtml(c.reusable_experience||'')}</p><p><b>Next suggestion:</b> ${escapeHtml(c.next_suggestions||'')}</p><p><b>Related active tasks:</b> ${escapeHtml((c.current_links||[]).join('; ')||'None')}</p><p><b>Completed tasks:</b></p><ul>${(c.completed_items||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul><div class="report-actions"><button class="secondary-btn" data-export="word" data-scope="category">Export Category Word</button><button class="secondary-btn" data-export="pdf" data-scope="category">Export Category PDF</button></div></div>`;}
+function renderReport(){
+  const tabs=$('#categoryTabs'), box=$('#reportContent');
+  const a=state.analysis;
+  if(!a||!a.categories){
+    tabs.innerHTML='';
+    box.innerHTML='<div class="empty">Use Local Preview or Generate AI Report to turn completed tasks into a traceable review.</div>';
+    return;
+  }
+  const cats=a.categories;
+  if(!state.selectedCategory || !cats.find(c=>c.name===state.selectedCategory)) state.selectedCategory=cats[0]?.name;
+  tabs.innerHTML=cats.map(c=>'<button class="report-tab '+(c.name===state.selectedCategory?'active':'')+'" data-cat="'+escapeHtml(c.name)+'">'+escapeHtml(c.name)+'</button>').join('');
+  const c=cats.find(x=>x.name===state.selectedCategory)||cats[0];
+  const completedItems=(c.completed_items||[]).map(x=>'<li>'+escapeHtml(x)+'</li>').join('');
+  box.innerHTML=[
+    '<div class="category-card">',
+    '<h3>'+escapeHtml(c.name)+'</h3>',
+    '<p><b>Why this category:</b> '+escapeHtml(c.reason||'')+'</p>',
+    '<p><b>Progress trace:</b> '+escapeHtml(c.journey||'')+'</p>',
+    '<p><b>Deadline review:</b> '+escapeHtml(c.deadline_review||'')+'</p>',
+    '<p><b>Reusable insight:</b> '+escapeHtml(c.reusable_experience||'')+'</p>',
+    '<p><b>Next suggestion:</b> '+escapeHtml(c.next_suggestions||'')+'</p>',
+    '<p><b>Related active tasks:</b> '+escapeHtml((c.current_links||[]).join('; ')||'None')+'</p>',
+    '<p><b>Completed tasks:</b></p>',
+    '<ul>'+completedItems+'</ul>',
+    '<div class="report-actions"><button class="secondary-btn" data-export="word" data-scope="category">Export Category Word</button><button class="secondary-btn" data-export="pdf" data-scope="category">Export Category PDF</button></div>',
+    '</div>'
+  ].join('');
+}
 function applyTheme(){const r=document.documentElement; if(state.theme==='sage'){r.style.setProperty('--bg','#f4f7ef');r.style.setProperty('--accent','#587356');r.style.setProperty('--dark','#263121')} else if(state.theme==='rose'){r.style.setProperty('--bg','#fbf1ef');r.style.setProperty('--accent','#b4867e');r.style.setProperty('--dark','#2b211f')} else {r.style.setProperty('--bg','#f8f4ef');r.style.setProperty('--accent','#1f1c19');r.style.setProperty('--dark','#1f1c19')}}
 function addTask(){const text=$('#taskInput').value.trim(); if(!text)return toast('Write a task first'); const task={id:id(),text,focus:$('#focusInput').value,deadline:$('#deadlineInput').value||'',checked:false,completed:false,createdAt:Date.now(),completedAt:null}; state.tasks.push(task); insertCustom(task.id); $('#taskInput').value=''; $('#deadlineInput').value=''; $('#deadlineText').textContent='Set deadline'; $('#focusInput').value='normal'; render();}
 function insertCustom(taskId){state.customOrder=state.customOrder.filter(x=>x!==taskId); const t=state.tasks.find(x=>x.id===taskId); const visible=state.customOrder.map(id=>state.tasks.find(x=>x.id===id)).filter(x=>x&&!x.completed); let idx=visible.findIndex(x=>smartCompare(t,x)<0); if(idx<0)idx=visible.length; const before=visible[idx]?.id; if(before){state.customOrder.splice(state.customOrder.indexOf(before),0,taskId)} else state.customOrder.push(taskId)}
