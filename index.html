@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F8F5F0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Trace Note">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Trace Note</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="app" class="app-shell">
+    <header class="topbar">
+      <span class="topbar-spacer"></span>
+      <h1 id="pageTitle">Trace Note</h1>
+      <button id="sortBtn" class="icon-btn" type="button" aria-label="Sort options">•••</button>
+    </header>
+
+    <section id="tasksPage" class="page active" aria-label="Tasks">
+      <div class="quick-add card">
+        <div class="add-row">
+          <button id="plusBtn" class="plus-btn" type="button" aria-label="Add task">+</button>
+          <input id="taskInput" class="task-input" type="text" placeholder="Add a new task" autocomplete="off">
+          <button id="addBtn" class="primary-mini" type="button">Add</button>
+        </div>
+        <div class="add-tools">
+          <button id="deadlineBtn" class="tool-pill" type="button">Set deadline</button>
+          <select id="newFocus" class="tool-pill select-pill" aria-label="Task focus">
+            <option value="normal">Normal</option>
+            <option value="core">Core</option>
+            <option value="light">Light</option>
+          </select>
+          <input id="deadlineInput" class="hidden-date" type="date" aria-hidden="true">
+        </div>
+      </div>
+
+      <div class="compact-tools">
+        <div class="search-box">
+          <span aria-hidden="true">⌕</span>
+          <input id="searchInput" type="text" placeholder="Search tasks">
+          <button id="searchBtn" type="button">Search</button>
+        </div>
+        <button id="filterBtn" class="filter-btn" type="button">Filter · All</button>
+        <button id="clearFilterBtn" class="clear-btn hidden" type="button">Clear</button>
+      </div>
+
+      <div id="taskList" class="task-list scroll-area"></div>
+    </section>
+
+    <section id="completedPage" class="page" aria-label="Completed">
+      <div class="compact-tools completed-tools">
+        <div class="search-box">
+          <span aria-hidden="true">⌕</span>
+          <input id="completedSearchInput" type="text" placeholder="Search completed">
+          <button id="completedSearchBtn" type="button">Search</button>
+        </div>
+        <button id="clearCompletedSearchBtn" class="clear-btn hidden" type="button">Clear</button>
+      </div>
+      <div id="completedList" class="task-list scroll-area"></div>
+    </section>
+
+    <section id="aiPage" class="page" aria-label="AI Report">
+      <div class="ai-actions">
+        <button id="localPreviewBtn" class="secondary-btn" type="button">Local Preview</button>
+        <button id="aiGenerateBtn" class="primary-btn" type="button">Generate AI Report</button>
+      </div>
+      <div class="ai-export-row">
+        <button id="exportAllWordBtn" class="secondary-btn" type="button">Export All Word</button>
+        <button id="exportAllPdfBtn" class="secondary-btn" type="button">Export All PDF</button>
+      </div>
+      <div id="categoryTabs" class="category-tabs"></div>
+      <div id="reportPanel" class="report-panel card"></div>
+    </section>
+
+    <section id="settingsPage" class="page" aria-label="Settings">
+      <div class="settings-card card">
+        <h2>Theme</h2>
+        <div class="theme-grid">
+          <button class="theme-btn" type="button" data-theme="ink"><span class="dot ink"></span>Ink White</button>
+          <button class="theme-btn" type="button" data-theme="sage"><span class="dot sage"></span>Sage</button>
+          <button class="theme-btn" type="button" data-theme="rose"><span class="dot rose"></span>Warm Rose</button>
+        </div>
+      </div>
+      <div class="settings-card card">
+        <h2>AI Settings</h2>
+        <label>Provider
+          <select id="providerInput">
+            <option value="deepseek">DeepSeek</option>
+            <option value="doubao">Doubao / Ark</option>
+            <option value="proxy">Local Proxy</option>
+          </select>
+        </label>
+        <label>API Key
+          <input id="apiKeyInput" type="password" placeholder="Paste your API key">
+        </label>
+        <label>Base URL
+          <input id="baseUrlInput" type="text" placeholder="https://api.deepseek.com">
+        </label>
+        <label>Model
+          <input id="modelInput" type="text" placeholder="deepseek-chat">
+        </label>
+        <button id="saveSettingsBtn" class="primary-btn" type="button">Save AI Settings</button>
+      </div>
+    </section>
+
+    <nav class="bottom-nav" aria-label="Primary">
+      <button class="nav-btn active" type="button" data-page="tasks"><span>☰</span>Tasks</button>
+      <button class="nav-btn" type="button" data-page="completed"><span>✓</span>Completed</button>
+      <button class="nav-btn" type="button" data-page="ai"><span>✦</span>AI Report</button>
+      <button class="nav-btn" type="button" data-page="settings"><span>⚙</span>Settings</button>
+    </nav>
+  </main>
+
+  <div id="sheetBackdrop" class="sheet-backdrop hidden" role="presentation">
+    <section id="filterSheet" class="sheet hidden" role="dialog" aria-modal="true" aria-label="Filter tasks">
+      <div class="sheet-handle"></div>
+      <h2>Filter Tasks</h2>
+      <h3>Deadline</h3>
+      <div class="chip-group" id="deadlineFilterGroup">
+        <button type="button" data-value="all">All</button>
+        <button type="button" data-value="today">Today</button>
+        <button type="button" data-value="7days">7 Days</button>
+        <button type="button" data-value="overdue">Overdue</button>
+        <button type="button" data-value="open">Open-ended</button>
+      </div>
+      <h3>Focus</h3>
+      <div class="chip-group" id="focusFilterGroup">
+        <button type="button" data-value="all">All</button>
+        <button type="button" data-value="core">Core</button>
+        <button type="button" data-value="normal">Normal</button>
+        <button type="button" data-value="light">Light</button>
+      </div>
+      <button id="applyFilterBtn" class="primary-btn" type="button">Apply Filter</button>
+      <button id="cancelFilterBtn" class="secondary-btn" type="button">Cancel</button>
+    </section>
+
+    <section id="sortSheet" class="sheet hidden" role="dialog" aria-modal="true" aria-label="Sort tasks">
+      <div class="sheet-handle"></div>
+      <h2>Sort Tasks</h2>
+      <button id="smartSortBtn" class="sheet-option" type="button">Smart Sort<span>Focus, deadline, status</span></button>
+      <button id="customSortBtn" class="sheet-option" type="button">Custom Sort<span>Use your saved manual order</span></button>
+      <button id="adjustOrderBtn" class="sheet-option" type="button">Adjust Custom Order<span>Drag, move, and confirm</span></button>
+      <button id="closeSortBtn" class="secondary-btn" type="button">Cancel</button>
+    </section>
+
+    <section id="reorderSheet" class="sheet tall hidden" role="dialog" aria-modal="true" aria-label="Adjust custom order">
+      <div class="sheet-handle"></div>
+      <h2>Custom Order</h2>
+      <div id="reorderList" class="reorder-list"></div>
+      <button id="confirmOrderBtn" class="primary-btn" type="button">Confirm Order</button>
+      <button id="cancelOrderBtn" class="secondary-btn" type="button">Cancel</button>
+    </section>
+
+    <section id="actionSheet" class="sheet hidden" role="dialog" aria-modal="true" aria-label="Task actions">
+      <div class="sheet-handle"></div>
+      <h2 id="actionTitle">Task Actions</h2>
+      <div id="actionOptions"></div>
+      <button id="closeActionBtn" class="secondary-btn" type="button">Cancel</button>
+    </section>
+
+    <section id="confirmSheet" class="sheet hidden" role="dialog" aria-modal="true" aria-label="Confirm action">
+      <div class="sheet-handle"></div>
+      <h2 id="confirmTitle">Confirm</h2>
+      <p id="confirmText" class="sheet-text"></p>
+      <button id="confirmPrimaryBtn" class="danger-btn" type="button">Confirm</button>
+      <button id="confirmCancelBtn" class="secondary-btn" type="button">Cancel</button>
+    </section>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js" defer></script>
+</body>
+</html>
