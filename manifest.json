@@ -1,13 +1,21 @@
 {
-  "name":"Trace Note",
-  "short_name":"Trace Note",
-  "start_url":"./",
-  "scope":"./",
-  "display":"standalone",
-  "background_color":"#F8F5F0",
-  "theme_color":"#F8F5F0",
-  "icons":[
-    {"src":"icon-192.png","sizes":"192x192","type":"image/png"},
-    {"src":"icon-512.png","sizes":"512x512","type":"image/png"}
+  "name": "Trace Note",
+  "short_name": "TraceNote",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8f4ef",
+  "theme_color": "#1f1c19",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ]
 }
