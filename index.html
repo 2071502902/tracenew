@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Trace Note</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#f8f4ef" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Trace Note" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <style>
+    :root{
+      --bg:#f8f4ef;
+      --surface:#ffffff;
+      --surface-soft:#fbf8f4;
+      --text:#2b2723;
+      --muted:#8f887f;
+      --line:#e9e2d9;
+      --dark:#1f1c19;
+      --danger:#d96b64;
+      --accent:#1f1c19;
+      --shadow:0 8px 28px rgba(28,22,15,.07);
+      --purple:#7d60df;
+      --blue:#4f82dd;
+      --green:#7faa55;
+      --safe-bottom:calc(env(safe-area-inset-bottom,0px) + 12px);
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;min-height:100%;background:linear-gradient(180deg,var(--bg),#fbfaf7);color:var(--text);font-family:"Inter","SF Pro Text","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+    body{display:flex;justify-content:center}
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer;touch-action:manipulation}
+    label.control{cursor:pointer;touch-action:manipulation}
+    .app{width:100%;max-width:430px;min-height:100vh;position:relative;padding:0 16px calc(76px + var(--safe-bottom));background:var(--bg)}
+    .topbar{height:58px;display:grid;grid-template-columns:40px 1fr 40px;align-items:center;padding-top:8px}
+    .topbar-title{text-align:center;font-family:"New York",Georgia,"Times New Roman",serif;font-size:22px;font-weight:700;letter-spacing:.1px;line-height:1}
+    .topbar-sub{font-family:inherit;font-size:10px;letter-spacing:2px;color:var(--muted);margin-top:4px;font-weight:600;text-transform:uppercase}
+    .icon-btn{width:36px;height:36px;border:0;background:transparent;border-radius:12px;color:#3d3833;font-size:22px;display:flex;align-items:center;justify-content:center}
+    .page{display:none;animation:fade .14s ease}
+    .page.active{display:block}
+    #page-current.active,#page-completed.active{display:flex;flex-direction:column;height:calc(100dvh - 76px - var(--safe-bottom));min-height:0;overflow:hidden}
+    #page-current .task-list,#page-completed .task-list{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px;padding-bottom:18px}
+    .top-spacer{width:36px;height:36px}
+    .native-date-overlay{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:3;border:0;background:transparent;color:transparent}
+    .native-date-overlay::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+    @keyframes fade{from{opacity:.65;transform:translateY(3px)}to{opacity:1;transform:none}}
+    .input-panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:12px;margin-top:8px}
+    .task-input{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:14px;background:var(--surface);height:48px;padding:0 12px}
+    .plus-btn{border:0;background:transparent;font-size:26px;line-height:1;color:#504941;padding:0 2px}
+    .task-input input{border:0;outline:0;background:transparent;flex:1;font-size:16px;min-width:0;color:var(--text)}
+    .mini-add{height:34px;border:0;border-radius:12px;background:var(--dark);color:#fff;padding:0 14px;font-size:14px;font-weight:700;letter-spacing:.01em}
+    .control-grid{display:grid;position:relative;z-index:6;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+    .control{height:46px;border:1px solid var(--line);border-radius:13px;background:var(--surface-soft);display:flex;align-items:center;justify-content:center;gap:7px;color:#3f3a35;font-size:14px;font-weight:700;position:relative;overflow:hidden;padding:0 10px}
+    .control.date-control{cursor:pointer}
+    .date-input-row{display:flex;gap:8px;align-items:center;margin-top:10px}
+    .date-input-row input{height:42px;flex:1;border:1px solid var(--line);border-radius:13px;background:#fff;padding:0 12px;color:var(--text);outline:0}
+    .control select{width:100%;height:100%;border:0;outline:0;background:transparent;text-align:center;color:#3f3a35;font-weight:700}
+    .section-label{font-size:15px;font-weight:800;color:#3a352f;margin:16px 2px 9px}
+    .chip-row{display:flex;gap:8px;overflow-x:auto;padding:0 0 2px;scrollbar-width:none}
+    .chip-row::-webkit-scrollbar{display:none}
+    .chip{height:32px;flex:0 0 auto;border-radius:999px;border:1px solid var(--line);background:#fff;color:#5c554e;padding:0 13px;font-size:13px;font-weight:800;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+    .chip.active{background:var(--dark);border-color:var(--dark);color:#fff}
+    .chip.dot::before{content:"";width:7px;height:7px;border-radius:50%;display:inline-block}
+    .core.dot::before{background:var(--purple)}
+    .normal.dot::before{background:var(--blue)}
+    .light.dot::before{background:var(--green)}
+    .search-row{display:flex;gap:8px;margin-top:12px}
+    .search-row input{height:42px;flex:1;min-width:0;border:1px solid var(--line);border-radius:14px;background:#fff;outline:0;padding:0 14px;font-size:14px;color:var(--text)}
+    .outline-btn{height:42px;border:1px solid var(--line);background:#fff;border-radius:14px;padding:0 13px;color:#3f3a35;font-weight:800;font-size:14px}
+    .outline-btn.active{background:var(--dark);border-color:var(--dark);color:#fff}
+    .task-list{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+    .task-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:13px 12px}
+    .task-main{display:flex;align-items:flex-start;gap:12px}
+    .check{width:28px;height:28px;border-radius:50%;border:2px solid #d8d0c7;background:#fff;flex:0 0 28px;margin-top:3px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900}
+    .check.done{background:var(--dark);border-color:var(--dark)}
+    .task-body{flex:1;min-width:0}
+    .task-title{font-size:16px;font-weight:800;line-height:1.35;margin:0 0 8px;color:var(--text);word-break:break-word}
+    .task-title.checked{text-decoration:line-through;color:#a19a91}
+    .meta-row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+    .badge{display:inline-flex;align-items:center;gap:5px;height:25px;border-radius:999px;padding:0 9px;font-size:12px;font-weight:800;border:1px solid transparent;white-space:nowrap}
+    .badge::before{content:"";width:7px;height:7px;border-radius:50%;display:inline-block;background:currentColor;opacity:.78}
+    .focus-core{background:#f0ebff;color:#7052d4;border-color:#dfd2ff}
+    .focus-normal{background:#edf3ff;color:#4d7ed8;border-color:#d7e5ff}
+    .focus-light{background:#eef7df;color:#739f4a;border-color:#dcefc2}
+    .dd-open{background:#efefec;color:#777168;border-color:#dfd9d1}
+    .dd-overdue{background:#fff0ef;color:#df6f69;border-color:#ffd3ce}
+    .dd-today{background:#fff2e8;color:#e78347;border-color:#ffd1b5}
+    .dd-1{background:#fff7de;color:#d99b23;border-color:#f3d989}
+    .dd-3{background:#fff8e2;color:#c29524;border-color:#ecd477}
+    .dd-7{background:#eef7df;color:#749f50;border-color:#d8ecb9}
+    .dd-far{background:#edf2f8;color:#718aa8;border-color:#d9e3ef}
+    .card-actions{display:flex;justify-content:flex-end;gap:14px;margin-top:10px;border-top:1px solid rgba(233,226,217,.75);padding-top:9px}
+    .text-btn{border:0;background:transparent;color:#8e867c;font-size:13px;font-weight:800;padding:3px 0}
+    .text-btn.danger{color:var(--danger)}
+    .confirm-row{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(233,226,217,.75)}
+    .confirm-btn{flex:1;height:36px;border-radius:12px;border:1px solid var(--line);background:#fff;color:#5d554d;font-size:13px;font-weight:800}
+    .confirm-btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+    .empty{padding:28px 16px;text-align:center;color:var(--muted);background:rgba(255,255,255,.55);border:1px dashed var(--line);border-radius:18px;margin-top:12px;line-height:1.6}
+    .bottom-nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:430px;padding:10px 18px var(--safe-bottom);background:linear-gradient(0deg,rgba(248,244,239,.98) 72%,rgba(248,244,239,0));display:grid;grid-template-columns:repeat(4,1fr);z-index:35;border-top:1px solid rgba(233,226,217,.7)}
+    .nav-btn{border:0;background:transparent;color:#8b837a;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:800}
+    .nav-btn .nav-icon{font-size:20px;height:22px;display:flex;align-items:center}
+    .nav-btn.active{color:var(--dark)}
+    .sheet-backdrop{position:fixed;inset:0;background:rgba(26,22,18,.36);z-index:50;display:none}
+    .sheet-backdrop.show{display:block}
+    .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border:1px solid var(--line);border-bottom:0;border-radius:24px 24px 0 0;box-shadow:0 -16px 44px rgba(20,15,10,.15);padding:10px 16px calc(env(safe-area-inset-bottom,0px) + 16px);max-width:430px;margin:0 auto;transform:translateY(100%);transition:transform .22s ease}
+    .sheet-backdrop.show .sheet{transform:translateY(0)}
+    .sheet.hidden{display:none}
+    .sheet-handle{width:50px;height:5px;border-radius:999px;background:#ddd6cc;margin:4px auto 15px}
+    .sheet-title{text-align:center;font-weight:900;font-size:18px;margin:0 0 14px}
+    .sheet-option{width:100%;border:1px solid var(--line);background:#fff;border-radius:16px;padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;text-align:left;font-weight:900;color:#2d2823}
+    .sheet-option.active{background:var(--dark);border-color:var(--dark);color:#fff}
+    .sheet-sub{display:block;margin-top:4px;color:#9a9288;font-weight:600;font-size:12px}
+    .sheet-option.active .sheet-sub{color:#ded6ce}
+    .sheet-primary{width:100%;height:48px;border:0;border-radius:16px;background:var(--dark);color:#fff;font-size:16px;font-weight:900;margin-top:8px}
+    .reorder-list{max-height:58vh;overflow:auto;padding-right:2px}
+    .reorder-item{display:flex;align-items:center;gap:11px;background:#fff;border:1px solid var(--line);border-radius:17px;padding:12px;margin-bottom:10px}
+    .drag{font-size:20px;color:#b7afa5;cursor:grab}
+    .reorder-title{font-weight:900;font-size:15px;line-height:1.3}
+    .reorder-meta{font-size:12px;color:#918a81;margin-top:4px}
+    .mini-move{border:0;background:#f5f1ec;border-radius:10px;width:30px;height:30px;font-weight:900;color:#645c54}
+    .panel{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:15px;margin-top:12px}
+    .panel-title{font-size:22px;font-weight:900;margin:0 0 12px}
+    .report-tabs{display:flex;gap:8px;overflow-x:auto;margin-top:10px;padding-bottom:2px;scrollbar-width:none}
+    .report-tabs::-webkit-scrollbar{display:none}
+    .report-tab{height:34px;border:1px solid var(--line);border-radius:12px;background:#f4f1ed;color:#5f574f;padding:0 12px;font-weight:900;white-space:nowrap}
+    .report-tab.active{background:#6d56d6;border-color:#6d56d6;color:#fff}
+    .category-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:14px;margin-top:12px}
+    .category-card h3{margin:0 0 8px;font-size:18px}
+    .category-card p,.category-card li{color:#574f47;line-height:1.65;font-size:14px}
+    .category-card ul{margin:8px 0 0 18px;padding:0}
+    .report-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+    .primary-btn{height:42px;border:0;border-radius:14px;background:var(--dark);color:#fff;font-weight:900}
+    .secondary-btn{height:42px;border:1px solid var(--line);border-radius:14px;background:#fff;color:#4a433c;font-weight:900}
+    .settings-row{padding:13px 0;border-bottom:1px solid var(--line)}
+    .settings-row label{display:block;font-weight:900;margin-bottom:7px}
+    .settings-row input,.settings-row select{width:100%;height:42px;border:1px solid var(--line);border-radius:13px;background:#fff;padding:0 12px;outline:0}
+    .theme-grid{display:grid;grid-template-columns:1fr;gap:9px}
+    .theme-btn{height:44px;border:1px solid var(--line);border-radius:14px;background:#fff;display:flex;align-items:center;gap:10px;padding:0 12px;font-weight:900;color:#4e463e}
+    .theme-btn.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(31,28,25,.08)}
+    .theme-dot{width:14px;height:14px;border-radius:50%}
+    .toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#211e1b;color:#fff;border-radius:999px;padding:10px 16px;font-size:13px;font-weight:800;opacity:0;pointer-events:none;transition:.2s;z-index:80}
+    .toast.show{opacity:1;bottom:104px}
+
+    .filter-summary-row{display:flex;position:relative;z-index:5;gap:9px;align-items:center;margin-top:12px}
+    .filter-summary{flex:1;height:48px;border:1px solid var(--line);border-radius:14px;background:#fff;padding:0 14px;display:flex;align-items:center;justify-content:space-between;color:#3f3a35;font-weight:900;font-size:14px}
+    .filter-summary small{color:var(--muted);font-weight:800;margin-left:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .filter-clear{height:48px;border:1px solid var(--line);border-radius:14px;background:#fff;color:#8b837a;font-weight:900;padding:0 12px}
+    .sheet-section{margin:12px 0 8px;font-size:14px;font-weight:900;color:#4a423b}
+    .sheet-chip-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    .edit-box{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+    .edit-box input{height:42px;border:1px solid var(--line);border-radius:13px;background:#fff;padding:0 12px;color:var(--text);outline:0;font-size:15px;font-weight:800}
+    .edit-actions{display:flex;gap:8px}
+    .edit-actions .confirm-btn{height:34px}
+    @media(min-width:700px){
+      body{padding:20px 0;background:#f2ede7}.app{border:1px solid var(--line);border-radius:34px;box-shadow:0 18px 60px rgba(31,25,18,.12);overflow:hidden;min-height:860px}.bottom-nav{border-radius:0 0 34px 34px}
+    }
+  
+
+    /* v35 typography refinement: quieter, cleaner, more native-app like */
+    html,body{
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",Arial,sans-serif;
+      font-weight:400;
+      letter-spacing:-0.012em;
+      text-rendering:auto;
+    }
+    button,input,select,textarea{font-family:inherit;letter-spacing:-0.01em}
+    .topbar-title{
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue","Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",Arial,sans-serif;
+      font-size:21px;
+      font-weight:650;
+      letter-spacing:-0.02em;
+    }
+    .topbar-sub{
+      font-size:9.5px;
+      font-weight:500;
+      letter-spacing:1.6px;
+    }
+    .task-input input,.search-row input,.edit-box input{
+      font-weight:400;
+      letter-spacing:-0.012em;
+    }
+    .task-title{
+      font-size:16px;
+      font-weight:600;
+      letter-spacing:-0.018em;
+    }
+    .section-label,.panel-title,.sheet-title{
+      font-weight:650;
+      letter-spacing:-0.02em;
+    }
+    .chip,.badge,.control,.control select,.outline-btn,.mini-add,.text-btn,
+    .confirm-btn,.nav-btn,.sheet-option,.sheet-primary,.reorder-title,
+    .mini-move,.report-tab,.primary-btn,.secondary-btn,.settings-row label,
+    .theme-btn,.toast,.filter-summary,.filter-summary small,.filter-clear,
+    .sheet-section{
+      font-weight:560;
+      letter-spacing:-0.01em;
+    }
+    .badge,.chip{font-size:12.5px}
+    .check{font-weight:650}
+    .sheet-option{font-size:15.5px}
+    .sheet-sub{font-weight:400;letter-spacing:-0.005em}
+
+
+    /* v37 readability + swipe actions */
+    #page-current.active,#page-completed.active{height:calc(100dvh - 70px - var(--safe-bottom));}
+    .input-panel{padding:10px;border-radius:17px;margin-top:6px;}
+    .task-input{height:44px;border-radius:14px;padding:0 10px;}
+    .task-input input{font-size:15.5px;}
+    .plus-btn{font-size:23px;}
+    .mini-add{height:32px;padding:0 12px;font-size:13px;border-radius:11px;}
+    .control-grid{gap:8px;margin-top:8px;}
+    .control{height:38px;border-radius:12px;font-size:13px;font-weight:560;}
+    .search-row{margin-top:10px;gap:7px;}
+    .search-row input{height:38px;border-radius:13px;font-size:13.5px;padding:0 12px;}
+    .outline-btn{height:38px;border-radius:13px;padding:0 11px;font-size:13px;}
+    .filter-summary-row{margin-top:8px;gap:7px;}
+    .filter-summary,.filter-clear{height:38px;border-radius:13px;font-size:13px;}
+    .filter-summary{padding:0 12px;}
+    .filter-summary small{max-width:190px;}
+    .task-list{gap:8px;margin-top:10px;}
+    /* v38: iOS/Reminders-style swipe actions. Actions sit behind the card on the right; confirmations use a bottom sheet, not an inline row. */
+    .swipe-shell{position:relative;border-radius:17px;overflow:hidden;min-height:72px;touch-action:pan-y;background:transparent;isolation:isolate;}
+    .swipe-actions{position:absolute;right:0;top:0;bottom:0;width:148px;display:grid;grid-template-columns:1fr 1fr;z-index:0;border-radius:0 17px 17px 0;overflow:hidden;}
+    .swipe-action{border:0;color:#fff;font-size:12.5px;font-weight:650;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;height:100%;min-height:72px;padding:0;}
+    .swipe-action.edit{background:#8a837a;}
+    .swipe-action.complete{background:#22201d;}
+    .swipe-action.restore{background:#6f8d56;}
+    .swipe-action.delete{background:var(--danger);}
+    .swipe-action span{font-size:17px;line-height:1;}
+    .swipe-shell .task-card{position:relative;z-index:1;transition:transform .18s ease;will-change:transform;background:var(--surface);height:100%;}
+    .swipe-shell.open .task-card{transform:translateX(-148px);}
+    .task-card{border-radius:17px;padding:10px 11px;box-shadow:0 5px 18px rgba(28,22,15,.055);}
+    .task-main{gap:10px;align-items:flex-start;}
+    .check{width:25px;height:25px;flex-basis:25px;margin-top:2px;}
+    .task-title{font-size:15.4px;margin-bottom:7px;line-height:1.28;}
+    .meta-row{gap:6px;}
+    .badge{height:22px;padding:0 8px;font-size:11.5px;}
+    .card-actions{display:none!important;}
+
+    /* v39: replace unstable swipe with mature mobile "more actions" menu. */
+    .task-card{position:relative;overflow:visible;}
+    .task-main{align-items:flex-start;}
+    .task-body{padding-right:30px;}
+    .task-menu-btn{position:absolute;top:9px;right:9px;width:32px;height:32px;border:0;border-radius:12px;background:transparent;color:#9a9288;font-size:22px;line-height:1;display:flex;align-items:center;justify-content:center;}
+    .task-menu-btn:active{background:#f3eee8;color:var(--text);}
+    .action-sheet-title{font-size:17px;font-weight:650;text-align:center;line-height:1.35;margin:0 12px 12px;letter-spacing:-.02em;word-break:break-word;}
+    .action-sheet-meta{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;}
+    .action-option{width:100%;height:50px;border:1px solid var(--line);border-radius:16px;background:#fff;color:var(--text);font-size:15px;font-weight:650;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;}
+    .action-option.primary{background:var(--dark);border-color:var(--dark);color:#fff;}
+    .action-option.danger{background:#fff3f2;border-color:#ffd6d2;color:var(--danger);}
+    .action-option.neutral{background:#fff;color:#6f675e;}
+
+    .confirm-row{display:none!important;}
+    .confirm-btn{height:34px;border-radius:11px;font-size:12.5px;}
+    .edit-box{display:flex;flex-direction:column;gap:8px;}
+    .edit-box input{height:38px;font-size:14px;border-radius:12px;}
+    .edit-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .edit-actions .confirm-btn{height:34px;}
+    .empty{margin-top:10px;padding:22px 14px;}
+    .confirm-copy{font-size:14px;color:var(--muted);line-height:1.45;text-align:center;margin:-6px 4px 14px;}
+    .confirm-actions{display:grid;grid-template-columns:1fr;gap:10px;}
+    .confirm-actions .danger-main{height:48px;border-radius:16px;border:0;background:var(--danger);color:white;font-weight:700;font-size:15px;}
+    .confirm-actions .neutral-main{height:48px;border-radius:16px;border:1px solid var(--line);background:white;color:var(--text);font-weight:650;font-size:15px;}
+
+  </style>
+</head>
+<body>
+<div class="app">
+  <section class="page active" id="page-current">
+    <header class="topbar">
+      <div class="top-spacer" aria-hidden="true"></div>
+      <div><div class="topbar-title">Trace Note</div></div>
+      <button class="icon-btn" id="sortBtn" aria-label="sort">⋯</button>
+    </header>
+
+    <div class="input-panel">
+      <div class="task-input">
+        <button class="plus-btn" id="plusBtn" aria-label="add">＋</button>
+        <input id="taskInput" placeholder="Add a task..." autocomplete="off" />
+        <button class="mini-add" id="addBtn">Add</button>
+      </div>
+      <div class="control-grid">
+        <label class="control date-control" id="deadlineControl"><span>🗓</span><span id="deadlineText">Set deadline</span><input id="deadlineInput" class="native-date-overlay" type="date" aria-label="Set deadline" /></label>
+        <label class="control"><span>◎</span><select id="focusInput"><option value="core">Focus: Core</option><option value="normal" selected>Focus: Normal</option><option value="light">Focus: Light</option></select></label>
+      </div>
+    </div>
+
+    <div class="search-row current-tools">
+      <input id="currentSearchInput" placeholder="Search tasks" />
+      <button class="outline-btn" id="currentSearchBtn">Search</button>
+      <button class="outline-btn" id="clearCurrentSearchBtn" style="display:none">Clear</button>
+    </div>
+    <div class="filter-summary-row">
+      <button class="filter-summary" id="filterBtn"><span>Filter</span><small id="filterSummary">All tasks</small></button>
+      <button class="filter-clear" id="clearFilterBtn" style="display:none">Clear</button>
+    </div>
+    <div class="task-list" id="currentList"></div>
+  </section>
+
+  <section class="page" id="page-completed">
+    <header class="topbar"><button class="icon-btn">✓</button><div class="topbar-title">Completed</div><div></div></header>
+    <div class="search-row">
+      <input id="completedSearchInput" placeholder="Search completed" />
+      <button class="outline-btn" id="completedSearchBtn">Search</button>
+      <button class="outline-btn" id="clearCompletedSearchBtn" style="display:none">Clear</button>
+    </div>
+    <div class="task-list" id="completedList"></div>
+  </section>
+
+  <section class="page" id="page-report">
+    <header class="topbar"><button class="icon-btn">✦</button><div class="topbar-title">AI Report</div><button class="icon-btn" id="moreReportBtn">⋯</button></header>
+    <div class="report-actions">
+      <button class="primary-btn" id="aiGenerateBtn">Generate AI Report</button>
+      <button class="secondary-btn" id="localPreviewBtn">Local Preview</button>
+    </div>
+    <div class="report-actions">
+      <button class="secondary-btn" id="exportAllWordBtn">Export All Word</button>
+      <button class="secondary-btn" id="exportAllPdfBtn">Export All PDF</button>
+    </div>
+    <div class="report-tabs" id="categoryTabs"></div>
+    <div id="reportContent"></div>
+  </section>
+
+  <section class="page" id="page-settings">
+    <header class="topbar"><button class="icon-btn">⚙</button><div class="topbar-title">Settings</div><div></div></header>
+    <div class="panel">
+      <div class="panel-title">Theme</div>
+      <div class="theme-grid">
+        <button class="theme-btn" data-theme="ink"><span class="theme-dot" style="background:#1f1c19"></span>Ink White</button>
+        <button class="theme-btn" data-theme="sage"><span class="theme-dot" style="background:#597352"></span>Sage</button>
+        <button class="theme-btn" data-theme="rose"><span class="theme-dot" style="background:#b4867e"></span>Warm Rose</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">AI Settings</div>
+      <div class="settings-row"><label>Provider</label><select id="providerInput"><option value="deepseek">DeepSeek</option><option value="doubao">Doubao / Volcano Ark</option><option value="proxy">Local Proxy</option></select></div>
+      <div class="settings-row"><label>API Key</label><input id="apiKeyInput" placeholder="Stored only in this browser" /></div>
+      <div class="settings-row"><label>Base URL</label><input id="baseUrlInput" /></div>
+      <div class="settings-row"><label>Model</label><input id="modelInput" /></div>
+      <button class="primary-btn" id="saveSettingsBtn" style="width:100%;margin-top:12px">Save AI Settings</button>
+    </div>
+  </section>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-page="current"><span class="nav-icon">◉</span><span>Tasks</span></button>
+    <button class="nav-btn" data-page="completed"><span class="nav-icon">✓</span><span>Completed</span></button>
+    <button class="nav-btn" data-page="report"><span class="nav-icon">✦</span><span>AI Report</span></button>
+    <button class="nav-btn" data-page="settings"><span class="nav-icon">⚙</span><span>Settings</span></button>
+  </nav>
+</div>
+
+<div class="sheet-backdrop" id="sheetBackdrop">
+  <div class="sheet" id="sortSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Sort Tasks</div>
+    <button class="sheet-option" data-sort-mode="smart"><span>Smart Sort<span class="sheet-sub">Order by focus, deadline, and status</span></span><span id="smartMark">✓</span></button>
+    <button class="sheet-option" data-sort-mode="custom"><span>Custom Sort<span class="sheet-sub">Keep your saved manual order</span></span><span id="customMark"></span></button>
+    <button class="sheet-option" id="openReorderBtn"><span>Adjust Custom Order<span class="sheet-sub">Drag, move, then save</span></span><span>›</span></button>
+  </div>
+  <div class="sheet hidden" id="reorderSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Adjust Custom Order</div>
+    <div class="reorder-list" id="reorderList"></div>
+    <button class="sheet-primary" id="confirmOrderBtn">Confirm Order</button>
+  </div>
+  <div class="sheet hidden" id="filterSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Filter Tasks</div>
+    <div class="sheet-section">Deadline</div>
+    <div class="sheet-chip-row chip-row" id="deadlineFilters">
+      <button class="chip active" data-value="all">All</button>
+      <button class="chip" data-value="today">Today</button>
+      <button class="chip" data-value="7days">7 Days</button>
+      <button class="chip" data-value="overdue">Overdue</button>
+      <button class="chip" data-value="open">Open-ended</button>
+    </div>
+    <div class="sheet-section">Focus</div>
+    <div class="sheet-chip-row chip-row" id="focusFilters">
+      <button class="chip active" data-value="all">All</button>
+      <button class="chip dot core" data-value="core">Core</button>
+      <button class="chip dot normal" data-value="normal">Normal</button>
+      <button class="chip dot light" data-value="light">Light</button>
+    </div>
+    <button class="sheet-primary" id="applyFilterBtn">Apply Filter</button>
+  </div>
+
+  <div class="sheet hidden" id="actionSheet">
+    <div class="sheet-handle"></div>
+    <div class="action-sheet-title" id="actionTaskTitle">Task Actions</div>
+    <div class="action-sheet-meta" id="actionTaskMeta"></div>
+    <div id="actionButtons"></div>
+  </div>
+  <div class="sheet hidden" id="confirmSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="confirmTitle">Confirm</div>
+    <div class="confirm-copy" id="confirmCopy"></div>
+    <div class="confirm-actions">
+      <button class="danger-main" id="confirmPrimaryBtn">Confirm</button>
+      <button class="neutral-main" id="confirmCancelBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const $=(s,p=document)=>p.querySelector(s); const $$=(s,p=document)=>Array.from(p.querySelectorAll(s));
+const KEY='trace_note_mobile_v30';
+const defaultState={
+  tasks:[], page:'current', deadlineFilter:'all', focusFilter:'all', currentSearch:'', completedSearch:'', sortMode:'smart', customOrder:[], theme:'ink', pendingDelete:null, pendingArchive:null, editingId:null, actionTaskId:null,
+  ai:{provider:'deepseek',apiKey:'',baseUrl:'https://api.deepseek.com',model:'deepseek-chat'}, analysis:null, selectedCategory:null
+};
+let state=loadState(); seedIfEmpty();
+function id(){return Math.random().toString(36).slice(2,10)}
+function todayISO(){return new Date().toISOString().slice(0,10)}
+function addDays(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}
+function setDeadlineValue(v){const input=$('#deadlineInput'); if(input) input.value=v||''; const label=$('#deadlineText'); if(label) label.textContent=dateLabel(v||'');}
+function setDeadlinePreset(preset){ if(preset==='open') setDeadlineValue(''); else if(preset==='today') setDeadlineValue(todayISO()); else if(preset==='tomorrow') setDeadlineValue(addDays(1)); else if(preset==='7days') setDeadlineValue(addDays(7)); }
+function loadState(){try{return Object.assign({},defaultState,JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){return {...defaultState}}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+function seedIfEmpty(){if(state.tasks.length)return; const now=Date.now(); state.tasks=[
+  {id:id(),text:'Revise research outline',focus:'core',deadline:addDays(-1),checked:false,completed:false,createdAt:now-600000},
+  {id:id(),text:'Submit experiment report',focus:'core',deadline:addDays(0),checked:false,completed:false,createdAt:now-500000},
+  {id:id(),text:'Prepare slides for meeting',focus:'normal',deadline:addDays(1),checked:false,completed:false,createdAt:now-400000},
+  {id:id(),text:'User interview analysis',focus:'normal',deadline:addDays(2),checked:false,completed:false,createdAt:now-300000},
+  {id:id(),text:'Design system update',focus:'light',deadline:addDays(5),checked:false,completed:false,createdAt:now-200000},
+  {id:id(),text:'Read: Design Thinking',focus:'light',deadline:'',checked:false,completed:false,createdAt:now-100000}
+]; state.customOrder=state.tasks.map(t=>t.id);}
+function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function daysUntil(date){if(!date)return null; return Math.round((new Date(date+'T00:00:00')-new Date(todayISO()+'T00:00:00'))/86400000)}
+function dateLabel(v){if(!v)return 'Set deadline'; const d=new Date(v+'T00:00:00'); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+function focusMeta(f){return {core:['Core','focus-core',0],normal:['Normal','focus-normal',1],light:['Light','focus-light',2]}[f]||['Normal','focus-normal',1]}
+function deadlineMeta(t){const d=daysUntil(t.deadline); if(d===null)return ['Open-ended','dd-open',999]; if(d<0)return ['Overdue','dd-overdue',-10]; if(d===0)return ['Due today','dd-today',0]; if(d===1)return ['1 day left','dd-1',1]; if(d<=3)return [d+' days left','dd-3',d]; if(d<=7)return [d+' days left','dd-7',d]; return [d+' days left','dd-far',d]}
+function smartCompare(a,b){const ax=[a.checked?1:0,focusMeta(a.focus)[2],deadlineMeta(a)[2],a.createdAt||0]; const bx=[b.checked?1:0,focusMeta(b.focus)[2],deadlineMeta(b)[2],b.createdAt||0]; for(let i=0;i<ax.length;i++) if(ax[i]!==bx[i]) return ax[i]-bx[i]; return 0}
+function taskMatchesDeadline(t){const f=state.deadlineFilter,d=daysUntil(t.deadline); if(f==='today')return d===0; if(f==='7days')return d!==null&&d>=0&&d<=7; if(f==='overdue')return d!==null&&d<0; if(f==='open')return !t.deadline; return true}
+function currentTasks(){let arr=state.tasks.filter(t=>!t.completed); if(state.deadlineFilter!=='all')arr=arr.filter(taskMatchesDeadline); if(state.focusFilter!=='all')arr=arr.filter(t=>t.focus===state.focusFilter); if(state.currentSearch)arr=arr.filter(t=>t.text.toLowerCase().includes(state.currentSearch.toLowerCase())); if(state.sortMode==='custom'){const order=state.customOrder; arr.sort((a,b)=>{const ia=order.indexOf(a.id),ib=order.indexOf(b.id); if(ia===-1&&ib===-1)return smartCompare(a,b); if(ia===-1)return 1;if(ib===-1)return -1;return ia-ib})}else arr.sort(smartCompare); return arr}
+function completedTasks(){let arr=state.tasks.filter(t=>t.completed); if(state.completedSearch)arr=arr.filter(t=>t.text.toLowerCase().includes(state.completedSearch.toLowerCase())); arr.sort((a,b)=>(b.completedAt||0)-(a.completedAt||0)); return arr}
+function render(){applyTheme(); renderPages(); renderFilters(); renderLists(); renderSettings(); renderReport(); renderSortSheet(); renderConfirmSheet(); save();}
+function renderPages(){ $$('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+state.page)); $$('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.page===state.page)); }
+function renderFilters(){
+  $$('#deadlineFilters .chip').forEach(c=>c.classList.toggle('active',c.dataset.value===state.deadlineFilter));
+  $$('#focusFilters .chip').forEach(c=>c.classList.toggle('active',c.dataset.value===state.focusFilter));
+  $('#clearCurrentSearchBtn').style.display=state.currentSearch?'block':'none';
+  $('#clearCompletedSearchBtn').style.display=state.completedSearch?'block':'none';
+  const deadlineLabels={all:'All deadlines',today:'Today','7days':'7 Days',overdue:'Overdue',open:'Open-ended'};
+  const focusLabels={all:'All focus',core:'Core',normal:'Normal',light:'Light'};
+  const summary=[];
+  if(state.deadlineFilter!=='all') summary.push(deadlineLabels[state.deadlineFilter]||'Deadline');
+  if(state.focusFilter!=='all') summary.push(focusLabels[state.focusFilter]||'Focus');
+  $('#filterSummary').textContent=summary.length?summary.join(' · '):'All tasks';
+  $('#clearFilterBtn').style.display=summary.length?'block':'none';
+}
+function taskCard(t,completed=false){
+  const fm=focusMeta(t.focus),dm=deadlineMeta(t);
+  const editing=state.editingId===t.id;
+  const titlePart=editing
+    ? `<div class="edit-box"><input id="editInput_${t.id}" value="${escapeHtml(t.text)}" autocomplete="off"/><div class="edit-actions"><button class="confirm-btn danger" data-action="saveEdit">Save</button><button class="confirm-btn" data-action="cancelEdit">Cancel</button></div></div>`
+    : `<div class="task-title ${t.checked?'checked':''}">${escapeHtml(t.text)}</div>`;
+  const menu = editing ? '' : `<button class="task-menu-btn" data-action="menu" aria-label="Task actions">⋯</button>`;
+  return `<div class="task-card" data-id="${t.id}">${menu}<div class="task-main"><button class="check ${t.checked?'done':''}" data-action="check">${t.checked?'✓':''}</button><div class="task-body">${titlePart}<div class="meta-row"><span class="badge ${fm[1]}">${fm[0]}</span><span class="badge ${dm[1]}">${dm[0]}</span></div></div></div></div>`
+}
+
+function renderLists(){const cur=currentTasks(); $('#currentList').innerHTML=cur.length?cur.map(t=>taskCard(t,false)).join(''):'<div class="empty">No tasks yet.<br>Write one thing and trace it forward.</div>'; const comp=completedTasks(); $('#completedList').innerHTML=comp.length?comp.map(t=>taskCard(t,true)).join(''):'<div class="empty">No completed tasks yet.<br>Finished tasks will become your trace material.</div>';}
+function renderSettings(){ $('#providerInput').value=state.ai.provider; $('#apiKeyInput').value=state.ai.apiKey||''; $('#baseUrlInput').value=state.ai.baseUrl||''; $('#modelInput').value=state.ai.model||''; $$('.theme-btn').forEach(b=>b.classList.toggle('active',b.dataset.theme===state.theme));}
+function renderSortSheet(){ $$('[data-sort-mode]').forEach(b=>b.classList.toggle('active',b.dataset.sortMode===state.sortMode)); $('#smartMark').textContent=state.sortMode==='smart'?'✓':''; $('#customMark').textContent=state.sortMode==='custom'?'✓':''; const ids=state.customOrder.filter(id=>state.tasks.find(t=>t.id===id&&!t.completed)); $('#reorderList').innerHTML=ids.map(id=>{const t=state.tasks.find(x=>x.id===id); const fm=focusMeta(t.focus),dm=deadlineMeta(t); return `<div class="reorder-item" draggable="true" data-id="${t.id}"><div class="drag">⋮⋮</div><div style="flex:1"><div class="reorder-title">${escapeHtml(t.text)}</div><div class="meta-row" style="margin-top:7px"><span class="badge ${fm[1]}">${fm[0]}</span><span class="badge ${dm[1]}">${dm[0]}</span></div></div><button class="mini-move" data-move="up">↑</button><button class="mini-move" data-move="down">↓</button></div>`}).join(''); initDrag();}
+
+function openActionSheet(id){
+  state.actionTaskId=id;
+  const task=state.tasks.find(t=>t.id===id);
+  if(!task) return;
+  const fm=focusMeta(task.focus), dm=deadlineMeta(task);
+  $('#actionTaskTitle').textContent=task.text;
+  $('#actionTaskMeta').innerHTML=`<span class="badge ${fm[1]}">${fm[0]}</span><span class="badge ${dm[1]}">${dm[0]}</span>`;
+  const completed=!!task.completed;
+  $('#actionButtons').innerHTML = completed
+    ? `<button class="action-option primary" data-action="restore">Restore</button><button class="action-option danger" data-action="askDelete">Delete Forever</button><button class="action-option neutral" id="closeActionBtn">Cancel</button>`
+    : `<button class="action-option" data-action="edit">Edit Task</button><button class="action-option primary" data-action="askArchive">Move to Completed</button><button class="action-option neutral" id="closeActionBtn">Cancel</button>`;
+  showSheet('action');
+}
+function renderConfirmSheet(){
+  const sheet=$('#confirmSheet'); if(!sheet) return;
+  const isMove=!!state.pendingArchive, isDelete=!!state.pendingDelete;
+  const id=isMove?state.pendingArchive:state.pendingDelete;
+  const task=state.tasks.find(t=>t.id===id);
+  if(!task){$('#confirmTitle').textContent='Confirm';$('#confirmCopy').textContent='';$('#confirmPrimaryBtn').textContent='Confirm';return;}
+  if(isMove){
+    $('#confirmTitle').textContent='Move to Completed?';
+    $('#confirmCopy').textContent=`“${task.text}” will be saved in Completed and used as trace material for future AI reports.`;
+    $('#confirmPrimaryBtn').textContent='Confirm Move';
+  }else if(isDelete){
+    $('#confirmTitle').textContent='Delete Forever?';
+    $('#confirmCopy').textContent=`“${task.text}” will be permanently removed and will no longer appear in reports.`;
+    $('#confirmPrimaryBtn').textContent='Delete Forever';
+  }
+}
+function renderReport(){const tabs=$('#categoryTabs'), box=$('#reportContent'); const a=state.analysis; if(!a||!a.categories){tabs.innerHTML=''; box.innerHTML='<div class="empty">Use Local Preview or Generate AI Report to turn completed tasks into a traceable review.</div>';return;} const cats=a.categories; if(!state.selectedCategory || !cats.find(c=>c.name===state.selectedCategory)) state.selectedCategory=cats[0]?.name; tabs.innerHTML=cats.map(c=>`<button class="report-tab ${c.name===state.selectedCategory?'active':''}" data-cat="${escapeHtml(c.name)}">${escapeHtml(c.name)}</button>`).join(''); const c=cats.find(x=>x.name===state.selectedCategory)||cats[0]; box.innerHTML=`<div class="category-card"><h3>${escapeHtml(c.name)}</h3><p><b>Why this category:</b> ${escapeHtml(c.reason||'')}</p><p><b>Progress trace:</b> ${escapeHtml(c.journey||'')}</p><p><b>Deadline review:</b> ${escapeHtml(c.deadline_review||'')}</p><p><b>Reusable insight:</b> ${escapeHtml(c.reusable_experience||'')}</p><p><b>Next suggestion:</b> ${escapeHtml(c.next_suggestions||'')}</p><p><b>Related active tasks:</b> ${escapeHtml((c.current_links||[]).join('; ')||'None')}</p><p><b>Completed tasks:</b></p><ul>${(c.completed_items||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul><div class="report-actions"><button class="secondary-btn" data-export="word" data-scope="category">Export Category Word</button><button class="secondary-btn" data-export="pdf" data-scope="category">Export Category PDF</button></div></div>`;}
+function applyTheme(){const r=document.documentElement; if(state.theme==='sage'){r.style.setProperty('--bg','#f4f7ef');r.style.setProperty('--accent','#587356');r.style.setProperty('--dark','#263121')} else if(state.theme==='rose'){r.style.setProperty('--bg','#fbf1ef');r.style.setProperty('--accent','#b4867e');r.style.setProperty('--dark','#2b211f')} else {r.style.setProperty('--bg','#f8f4ef');r.style.setProperty('--accent','#1f1c19');r.style.setProperty('--dark','#1f1c19')}}
+function addTask(){const text=$('#taskInput').value.trim(); if(!text)return toast('Write a task first'); const task={id:id(),text,focus:$('#focusInput').value,deadline:$('#deadlineInput').value||'',checked:false,completed:false,createdAt:Date.now(),completedAt:null}; state.tasks.push(task); insertCustom(task.id); $('#taskInput').value=''; $('#deadlineInput').value=''; $('#deadlineText').textContent='Set deadline'; $('#focusInput').value='normal'; render();}
+function insertCustom(taskId){state.customOrder=state.customOrder.filter(x=>x!==taskId); const t=state.tasks.find(x=>x.id===taskId); const visible=state.customOrder.map(id=>state.tasks.find(x=>x.id===id)).filter(x=>x&&!x.completed); let idx=visible.findIndex(x=>smartCompare(t,x)<0); if(idx<0)idx=visible.length; const before=visible[idx]?.id; if(before){state.customOrder.splice(state.customOrder.indexOf(before),0,taskId)} else state.customOrder.push(taskId)}
+function taskAction(id,action){
+  const t=state.tasks.find(x=>x.id===id); if(!t)return;
+  if(action==='check') t.checked=!t.checked;
+  if(action==='edit'){ state.editingId=id; state.pendingArchive=null; state.pendingDelete=null; }
+  if(action==='cancelEdit'){ state.editingId=null; }
+  if(action==='saveEdit'){
+    const input=$(`#editInput_${id}`);
+    const txt=input?input.value.trim():'';
+    if(txt) t.text=txt;
+    state.editingId=null;
+  }
+  if(action==='askArchive'){ state.pendingArchive=id; state.pendingDelete=null; state.editingId=null; state.actionTaskId=null; render(); setTimeout(()=>showSheet('confirm'),0); return; }
+  if(action==='cancelArchive'){ state.pendingArchive=null; closeSheet(); }
+  if(action==='archive'){ t.completed=true;t.completedAt=Date.now();t.checked=true;state.customOrder=state.customOrder.filter(x=>x!==id);state.pendingArchive=null; closeSheet(); }
+  if(action==='restore'){ t.completed=false;t.completedAt=null;if(!state.customOrder.includes(id))insertCustom(id);state.pendingDelete=null;state.pendingArchive=null; }
+  if(action==='askDelete'){ state.pendingDelete=id; state.pendingArchive=null; state.editingId=null; state.actionTaskId=null; render(); setTimeout(()=>showSheet('confirm'),0); return; }
+  if(action==='cancelDelete'){ state.pendingDelete=null; closeSheet(); }
+  if(action==='deleteForever'){ state.tasks=state.tasks.filter(x=>x.id!==id);state.customOrder=state.customOrder.filter(x=>x!==id);state.pendingDelete=null; closeSheet(); }
+  render();
+  if(action==='edit') setTimeout(()=>{const input=$(`#editInput_${id}`); if(input){input.focus(); input.setSelectionRange(input.value.length,input.value.length)}},30);
+}
+function showSheet(which='sort'){$('#sheetBackdrop').classList.add('show');const sort=$('#sortSheet'),reorder=$('#reorderSheet'),filter=$('#filterSheet'),confirm=$('#confirmSheet'),action=$('#actionSheet');if(sort)sort.classList.toggle('hidden',which!=='sort');if(reorder)reorder.classList.toggle('hidden',which!=='reorder');if(filter)filter.classList.toggle('hidden',which!=='filter');if(confirm)confirm.classList.toggle('hidden',which!=='confirm');if(action)action.classList.toggle('hidden',which!=='action')}
+function closeSheet(){$('#sheetBackdrop').classList.remove('show');state.actionTaskId=null}
+function openNativeDatePicker(){/* native date input is layered over the deadline control */}
+function syncOrder(){const ids=$$('#reorderList .reorder-item').map(el=>el.dataset.id); const rest=state.customOrder.filter(id=>!ids.includes(id)); state.customOrder=ids.concat(rest)}
+function initDrag(){let dragging=null; $$('#reorderList .reorder-item').forEach(row=>{row.addEventListener('dragstart',()=>{dragging=row;row.style.opacity='.5'}); row.addEventListener('dragend',()=>{row.style.opacity='';syncOrder()}); row.addEventListener('dragover',e=>{e.preventDefault(); if(!dragging||dragging===row)return; const after=e.clientY>row.getBoundingClientRect().top+row.offsetHeight/2; row.parentNode.insertBefore(dragging,after?row.nextSibling:row)}); row.querySelector('[data-move="up"]').onclick=()=>{const p=row.previousElementSibling;if(p){row.parentNode.insertBefore(row,p);syncOrder();renderSortSheet()}}; row.querySelector('[data-move="down"]').onclick=()=>{const n=row.nextElementSibling;if(n){row.parentNode.insertBefore(n,row);syncOrder();renderSortSheet()}};})}
+function localAnalysis(){
+  const completed=completedTasks();
+  const current=currentTasks();
+  const groups={};
+  const classify=t=>{
+    const s=t.text;
+    if(/论文|投稿|摘要|discussion|manuscript|paper|报告|实验|research|outline|slides|experiment/i.test(s))return 'Academic Work';
+    if(/家务|洗衣|厨房|房间|休息|送礼|吃饭|laundry|clean|home|daily|meal/i.test(s))return 'Daily Life';
+    if(/产品|设计|界面|用户|访谈|优化|product|design|interface|user|interview|system/i.test(s))return 'Product Design';
+    return 'General Progress';
+  };
+  completed.forEach(t=>{const k=classify(t); groups[k]=groups[k]||[];groups[k].push(t)});
+  const cats=Object.entries(groups).map(([name,items])=>({
+    name,
+    reason:'Grouped by recurring keywords and action context in completed tasks.',
+    journey:`This category has accumulated ${items.length} completed task(s), which can be used to review your working rhythm.`,
+    deadline_review:deadlineReview(items),
+    reusable_experience:'Break similar tasks into smaller next actions, and keep both deadline and completion time for later review.',
+    next_suggestions:'When adding a similar task, set both Focus and Deadline so sorting and review become more accurate.',
+    current_links:current.filter(t=>classify(t)===name).map(t=>t.text),
+    completed_items:items.map(t=>t.text)
+  }));
+  state.analysis={categories:cats.length?cats:[{name:'No Category Yet',reason:'There are no completed tasks yet.',journey:'Move a few tasks to Completed first.',deadline_review:'No data yet.',reusable_experience:'No data yet.',next_suggestions:'Complete a few tasks, then generate a report again.',current_links:[],completed_items:[]}]};
+  state.selectedCategory=state.analysis.categories[0].name;
+  render();
+}
+function deadlineReview(items){
+  let early=0,late=0,open=0,on=0;
+  items.forEach(t=>{
+    if(!t.deadline){open++;return}
+    const diff=Math.round((new Date(t.completedAt||Date.now())-new Date(t.deadline+'T23:59:59'))/86400000);
+    if(diff<0)early++; else if(diff>0)late++; else on++;
+  });
+  return `${early} completed early, ${on} completed on time, ${late} completed late, ${open} open-ended.`;
+}
+async function generateAI(){
+  if(!state.ai.apiKey && state.ai.provider!=='proxy')return toast('Add an API key in Settings first');
+  const payload={completed:completedTasks(),current:currentTasks()};
+  const prompt=`You are the review assistant for Trace Note. Analyze the user's completed tasks and current tasks. Classify completed tasks into meaningful categories and return strict JSON only, with no Markdown. Use English field values when possible. Format: {"categories":[{"name":"Category name","reason":"Why these tasks belong together","journey":"Progress trace and process pattern","deadline_review":"Deadline pattern review","reusable_experience":"Reusable lesson","next_suggestions":"Practical next step","current_links":["related current task"],"completed_items":["completed task"]}]}. Data: ${JSON.stringify(payload)}`;
+  try{
+    toast('Generating AI report...');
+    const url=state.ai.provider==='proxy'?'/api/ai-report':state.ai.baseUrl.replace(/\/$/,'')+'/chat/completions';
+    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json',...(state.ai.provider==='proxy'?{}:{Authorization:'Bearer '+state.ai.apiKey})},body:JSON.stringify(state.ai.provider==='proxy'?{prompt,payload}:{model:state.ai.model,messages:[{role:'user',content:prompt}],temperature:.2})});
+    const data=await res.json();
+    const text=data.choices?.[0]?.message?.content || data.content || JSON.stringify(data);
+    const json=JSON.parse(text.match(/\{[\s\S]*\}/)?.[0]||text);
+    state.analysis=json; state.selectedCategory=json.categories?.[0]?.name; render(); toast('Report generated');
+  }catch(e){console.error(e);toast('AI failed. Showing local preview.');localAnalysis();}
+}
+function buildReportHtml(scope){
+  if(!state.analysis)return '';
+  let cats=state.analysis.categories||[];
+  if(scope==='category')cats=cats.filter(c=>c.name===state.selectedCategory);
+  return `<html><head><meta charset="utf-8"><title>Trace Note Report</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue','Segoe UI',Arial,sans-serif;line-height:1.7;color:#222;padding:32px}h1{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue','Segoe UI',Arial,sans-serif;font-weight:650;letter-spacing:-.02em}section{border-bottom:1px solid #ddd;padding:18px 0}</style></head><body><h1>Trace Note AI Report</h1>${cats.map(c=>`<section><h2>${escapeHtml(c.name)}</h2><p><b>Why this category:</b> ${escapeHtml(c.reason||'')}</p><p><b>Progress trace:</b> ${escapeHtml(c.journey||'')}</p><p><b>Deadline review:</b> ${escapeHtml(c.deadline_review||'')}</p><p><b>Reusable insight:</b> ${escapeHtml(c.reusable_experience||'')}</p><p><b>Next suggestion:</b> ${escapeHtml(c.next_suggestions||'')}</p><p><b>Related active tasks:</b> ${escapeHtml((c.current_links||[]).join('; ')||'None')}</p><p><b>Completed tasks:</b></p><ul>${(c.completed_items||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul></section>`).join('')}</body></html>`;
+}
+function exportWord(scope){if(!state.analysis)return toast('Generate a report first'); const html=buildReportHtml(scope); const blob=new Blob(['\ufeff',html],{type:'application/msword'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`TraceNote_${scope==='category'?state.selectedCategory:'All'}_Report.doc`; a.click(); URL.revokeObjectURL(a.href)}
+function exportPDF(scope){if(!state.analysis)return toast('Generate a report first'); const w=window.open('','_blank'); w.document.write(buildReportHtml(scope)); w.document.close(); setTimeout(()=>w.print(),300)}
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
+
+
+// events
+document.addEventListener('click',e=>{
+  const nav=e.target.closest('.nav-btn'); if(nav){state.page=nav.dataset.page;render();return}
+  const d=e.target.closest('#deadlineFilters .chip'); if(d){state.deadlineFilter=d.dataset.value;render();return}
+  const f=e.target.closest('#focusFilters .chip'); if(f){state.focusFilter=f.dataset.value;render();return}
+  const actionSheet=$('#actionSheet'); if(actionSheet && !actionSheet.classList.contains('hidden')){const act=e.target.closest('[data-action]'); if(act && state.actionTaskId){const action=act.dataset.action; const targetId=state.actionTaskId; closeSheet(); taskAction(targetId,action); return;} if(e.target.id==='closeActionBtn'){closeSheet();return}}
+  const card=e.target.closest('.task-card'); const act=e.target.closest('[data-action]'); if(card&&act){ if(act.dataset.action==='menu'){openActionSheet(card.dataset.id);return;} taskAction(card.dataset.id,act.dataset.action);return}
+  if(e.target.id==='sortBtn'){showSheet('sort');return}
+  if(e.target.id==='filterBtn'){showSheet('filter');return}
+  if(e.target.id==='clearFilterBtn'){state.deadlineFilter='all';state.focusFilter='all';render();return}
+  if(e.target.id==='applyFilterBtn'){closeSheet();return}
+  const preset=e.target.closest('[data-date-preset]'); if(preset){setDeadlinePreset(preset.dataset.datePreset); closeSheet(); return}
+    const sm=e.target.closest('[data-sort-mode]'); if(sm){state.sortMode=sm.dataset.sortMode;render();return}
+  if(e.target.id==='openReorderBtn'){showSheet('reorder');return}
+  if(e.target.id==='confirmOrderBtn'){syncOrder();state.sortMode='custom';closeSheet();render();return}
+  if(e.target.id==='confirmPrimaryBtn'){
+    if(state.pendingArchive){taskAction(state.pendingArchive,'archive');return}
+    if(state.pendingDelete){taskAction(state.pendingDelete,'deleteForever');return}
+  }
+  if(e.target.id==='confirmCancelBtn'){
+    state.pendingArchive=null; state.pendingDelete=null; closeSheet(); render(); return;
+  }
+  if(e.target.id==='sheetBackdrop'){
+    state.pendingArchive=null; state.pendingDelete=null; closeSheet(); render(); return;
+  }
+  const cat=e.target.closest('[data-cat]'); if(cat){state.selectedCategory=cat.dataset.cat;render();return}
+  const exp=e.target.closest('[data-export]'); if(exp){exp.dataset.export==='word'?exportWord(exp.dataset.scope):exportPDF(exp.dataset.scope);return}
+  const th=e.target.closest('.theme-btn'); if(th){state.theme=th.dataset.theme;render();return}
+});
+$('#plusBtn').onclick=addTask; $('#addBtn').onclick=addTask; $('#taskInput').addEventListener('keydown',e=>{if(e.key==='Enter')addTask()});
+$('#deadlineInput').addEventListener('change',e=>{setDeadlineValue(e.target.value); closeSheet();});
+$('#currentSearchBtn').onclick=()=>{state.currentSearch=$('#currentSearchInput').value.trim();render()};
+$('#currentSearchInput').addEventListener('keydown',e=>{if(e.key==='Enter'){$('#currentSearchBtn').click()}});
+$('#clearCurrentSearchBtn').onclick=()=>{state.currentSearch='';$('#currentSearchInput').value='';render()};
+$('#completedSearchBtn').onclick=()=>{state.completedSearch=$('#completedSearchInput').value.trim();render()};
+$('#completedSearchInput').addEventListener('keydown',e=>{if(e.key==='Enter'){$('#completedSearchBtn').click()}});
+$('#clearCompletedSearchBtn').onclick=()=>{state.completedSearch='';$('#completedSearchInput').value='';render()};
+$('#localPreviewBtn').onclick=localAnalysis; $('#aiGenerateBtn').onclick=generateAI;
+$('#exportAllWordBtn').onclick=()=>exportWord('all'); $('#exportAllPdfBtn').onclick=()=>exportPDF('all');
+$('#saveSettingsBtn').onclick=()=>{state.ai={provider:$('#providerInput').value,apiKey:$('#apiKeyInput').value.trim(),baseUrl:$('#baseUrlInput').value.trim(),model:$('#modelInput').value.trim()}; toast('AI settings saved'); render()};
+$('#providerInput').addEventListener('change',()=>{const p=$('#providerInput').value; if(p==='deepseek'){ $('#baseUrlInput').value='https://api.deepseek.com'; $('#modelInput').value='deepseek-chat'; } if(p==='doubao'){ $('#baseUrlInput').value='https://ark.cn-beijing.volces.com/api/v3'; $('#modelInput').value='Enter endpoint model ID'; } if(p==='proxy'){ $('#baseUrlInput').value='/api'; $('#modelInput').value='proxy'; }});
+
+// direct touch listeners for mobile reliability
+const filterButton = $('#filterBtn');
+if(filterButton){ filterButton.addEventListener('pointerup', e=>{ e.preventDefault(); showSheet('filter'); }); }
+const sortButton = $('#sortBtn');
+if(sortButton){ sortButton.addEventListener('pointerup', e=>{ e.preventDefault(); showSheet('sort'); }); }
+render();
+</script>
+
+<script>
+  // Cleanup old PWA caches/service workers during active development.
+  (function () {
+    try {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          regs.forEach(function (reg) { reg.unregister(); });
+        });
+      }
+      if (window.caches) {
+        caches.keys().then(function (keys) {
+          keys.forEach(function (key) { caches.delete(key); });
+        });
+      }
+    } catch (e) { console.log('Trace Note cleanup skipped', e); }
+  })();
+</script>
+</body>
+</html>
