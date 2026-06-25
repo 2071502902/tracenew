@@ -22,20 +22,34 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Prepare web assets
+        run: |
+          echo "Current files:"
+          find . -maxdepth 2 -type f | sort
+
+          mkdir -p www
+
+          if [ -f "www/index.html" ]; then
+            echo "www/index.html already exists."
+          elif [ -f "index.html" ]; then
+            echo "Copy root index.html to www/index.html"
+            cp index.html www/index.html
+          else
+            echo "ERROR: Neither www/index.html nor root index.html exists."
+            exit 1
+          fi
+
+          if [ ! -f "www/manifest.json" ]; then
+            echo '{"name":"Trace Note","short_name":"TraceNote","start_url":"./index.html","display":"standalone","background_color":"#f8f4ef","theme_color":"#f8f4ef"}' > www/manifest.json
+          fi
+
+          echo "Prepared www folder:"
+          ls -la www
+
       - name: Add Android platform if missing
         run: |
           if [ ! -d "android" ]; then
             npx cap add android
-          fi
-
-      - name: Ensure web assets
-        run: |
-          mkdir -p www
-          if [ ! -f "www/index.html" ]; then
-            cp index.html www/index.html
-          fi
-          if [ ! -f "www/manifest.json" ]; then
-            echo '{"name":"Trace Note","short_name":"TraceNote","start_url":"./index.html","display":"standalone","background_color":"#f8f4ef","theme_color":"#f8f4ef"}' > www/manifest.json
           fi
 
       - name: Sync Capacitor
