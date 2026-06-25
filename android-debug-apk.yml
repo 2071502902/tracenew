@@ -7,47 +7,48 @@ on:
       - main
 
 jobs:
-  build-android-debug-apk:
+  build-android:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js LTS
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
+          node-version: 20
 
       - name: Install dependencies
         run: npm install
 
-      - name: Add Android platform if needed
+      - name: Add Android platform if missing
         run: |
-          if [ ! -d android ]; then
+          if [ ! -d "android" ]; then
             npx cap add android
-          else
-            echo "android directory already exists; skipping cap add android"
           fi
 
-      - name: Sync Capacitor Android project
+      - name: Ensure web assets
+        run: |
+          mkdir -p www
+          if [ ! -f "www/index.html" ]; then
+            cp index.html www/index.html
+          fi
+          if [ ! -f "www/manifest.json" ]; then
+            echo '{"name":"Trace Note","short_name":"TraceNote","start_url":"./index.html","display":"standalone","background_color":"#f8f4ef","theme_color":"#f8f4ef"}' > www/manifest.json
+          fi
+
+      - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Build debug APK
-        run: |
-          chmod +x android/gradlew
-          cd android
-          ./gradlew assembleDebug
+      - name: Make Gradle executable
+        run: chmod +x android/gradlew
 
-      - name: Upload debug APK
+      - name: Build debug APK
+        run: cd android && ./gradlew assembleDebug
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: trace-note-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
